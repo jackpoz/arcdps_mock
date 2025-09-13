@@ -44,3 +44,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC imgui::imgui)
 target_link_libraries(${PROJECT_NAME} PUBLIC Version.lib d3d11.lib Winmm.lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE ArcdpsMockXevtc)
 target_link_libraries(${PROJECT_NAME} PRIVATE ArcdpsMockLog)
+
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)

@@ -38,3 +38,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC nlohmann_json::nlohmann_json)
 target_link_libraries(${PROJECT_NAME} PUBLIC imgui::imgui)
 target_link_libraries(${PROJECT_NAME} PUBLIC ArcdpsMockXevtc)
 target_link_libraries(${PROJECT_NAME} PUBLIC ArcdpsMockLog)
+
+install(TARGETS ${PROJECT_NAME}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
