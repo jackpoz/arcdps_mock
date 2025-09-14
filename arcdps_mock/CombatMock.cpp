@@ -6,6 +6,7 @@
 #include <imgui/imgui.h>
 #include <atomic>
 #include <cassert>
+#include <thread>
 #include <Windows.h>
 #include <nlohmann/json.hpp>
 
@@ -882,12 +883,16 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParall
 	}
 	else
 	{
-		LOG("Started sending events synchronously");
-		for (uint32_t i = 0; i < header.EventCount; i++)
-		{
-			ExecuteXevtcEvent(eventQueue[i], mXevtcStrings, *myCallbacks);
-		}
-		LOG("Done sending events synchronously");
+		LOG("Started sending events asynchronously");
+		std::thread([this, header, eventQueue = std::move(eventQueue)]() {
+			for (uint32_t i = 0; i < header.EventCount; i++)
+			{
+				ExecuteXevtcEvent(eventQueue[i], mXevtcStrings, *myCallbacks);
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+		}).detach();
+
+		LOG("Done sending events asynchronously");
 	}
 
 	LOG("Simulated %u events from %s", header.EventCount, pFilePath);
