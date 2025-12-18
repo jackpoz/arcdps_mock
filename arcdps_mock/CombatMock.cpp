@@ -883,14 +883,34 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParall
 	}
 	else
 	{
+		const uint32_t threadsCount = 4;
+		std::vector<std::unique_ptr<std::vector<XevtcEvent>>> threadEventQueues;
+
+		for (uint32_t i = 0; i < threadsCount; i++)
+		{
+			threadEventQueues.emplace_back(std::make_unique<std::vector<XevtcEvent>>());
+			threadEventQueues[i]->reserve(header.EventCount / threadsCount + 1);
+		}
+
+		// iterate over eventQueue with for loop (or foreach)
+		for (uint32_t i = 0; i < header.EventCount; i++)
+		{
+			uint32_t threadIndex = i % threadsCount;
+			auto& eventQueueForThread = threadEventQueues[threadIndex];
+			eventQueueForThread->push_back(eventQueue[i]);
+		}
+
 		LOG("Started sending events asynchronously");
-		std::thread([this, header, eventQueue = std::move(eventQueue)]() {
-			for (uint32_t i = 0; i < header.EventCount; i++)
-			{
-				ExecuteXevtcEvent(eventQueue[i], mXevtcStrings, *myCallbacks);
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			}
-		}).detach();
+		for (uint32_t i = 0; i < threadsCount; i++)
+		{
+			std::thread([this, eventQueue = std::move(threadEventQueues[i])]() {
+				for (uint32_t i = 0; i < eventQueue->size(); i++)
+				{
+					ExecuteXevtcEvent(eventQueue->at(i), mXevtcStrings, *myCallbacks);
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				}
+			}).detach();
+		}
 
 		LOG("Done sending events asynchronously");
 	}
