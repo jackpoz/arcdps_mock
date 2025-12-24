@@ -687,7 +687,7 @@ DWORD WINAPI CallbackWorker(LPVOID pParam)
 }
 
 
-uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParallelEventCount, uint32_t pMaxFuzzWidth)
+uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParallelEventCount, uint32_t pMaxFuzzWidth, bool pStressTest)
 {
 	LOG("Executing '%s' - pMaxParallelEventCount=%u, pMaxFuzzWidth=%u", pFilePath, pMaxParallelEventCount, pMaxFuzzWidth);
 
@@ -883,34 +883,47 @@ uint32_t CombatMock::ExecuteFromXevtc(const char* pFilePath, uint32_t pMaxParall
 	}
 	else
 	{
+		const uint32_t runs = pStressTest ? uint32_t(-1) : 1;
 		const uint32_t threadsCount = 4;
-		std::vector<std::unique_ptr<std::vector<XevtcEvent>>> threadEventQueues;
+
+		std::vector<std::vector<XevtcEvent>> threadEventQueues;
+		threadEventQueues.resize(threadsCount);
 
 		for (uint32_t i = 0; i < threadsCount; i++)
 		{
-			threadEventQueues.emplace_back(std::make_unique<std::vector<XevtcEvent>>());
-			threadEventQueues[i]->reserve(header.EventCount / threadsCount + 1);
+			threadEventQueues[i].reserve(header.EventCount / threadsCount + 1);
 		}
 
 		// iterate over eventQueue with for loop (or foreach)
 		for (uint32_t i = 0; i < header.EventCount; i++)
 		{
 			uint32_t threadIndex = i % threadsCount;
-			auto& eventQueueForThread = threadEventQueues[threadIndex];
-			eventQueueForThread->push_back(eventQueue[i]);
+			threadEventQueues[threadIndex].push_back(eventQueue[i]);
 		}
 
-		LOG("Started sending events asynchronously");
-		for (uint32_t i = 0; i < threadsCount; i++)
-		{
-			std::thread([this, eventQueue = std::move(threadEventQueues[i])]() {
-				for (uint32_t i = 0; i < eventQueue->size(); i++)
+		std::thread([this, runs, eventQueues = std::move(threadEventQueues)]() {
+			for (uint32_t run = 0; run < runs; run++)
+			{
+				std::vector<std::thread> workers;
+				for (uint32_t i = 0; i < threadsCount; i++)
 				{
-					ExecuteXevtcEvent(eventQueue->at(i), mXevtcStrings, *myCallbacks);
-					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+					auto worker = std::thread([this, &eventQueue = eventQueues[i]]() {
+						for (uint32_t i = 0; i < eventQueue.size(); i++)
+						{
+							ExecuteXevtcEvent(eventQueue.at(i), mXevtcStrings, *myCallbacks);
+							std::this_thread::sleep_for(std::chrono::milliseconds(1));
+						}
+					});
+					workers.emplace_back(std::move(worker));
 				}
-			}).detach();
-		}
+
+				for (auto& worker : workers)
+				{
+					worker.join();
+				}
+			}
+		}).detach();
+		
 
 		LOG("Done sending events asynchronously");
 	}
@@ -1289,7 +1302,7 @@ void CombatMock::DisplayLog()
 
 void CombatMock::DisplayActions()
 {
-	ImGui::SetNextWindowSize(ImVec2(360, 180), ImGuiCond_Always);
+	ImGui::SetNextWindowSize(ImVec2(360, 210), ImGuiCond_Always);
 	if (ImGui::Begin("Actions", nullptr) == true)
 	{
 		bool selfAgentExists = (GetAgent(mySelfId) != nullptr);
@@ -1316,6 +1329,10 @@ void CombatMock::DisplayActions()
 		if (ImGui::Button("Load and simulate xevtc") == true)
 		{
 			ExecuteFromXevtc(myInputFilePath, 0, 0);
+		}
+		if (ImGui::Button("Stress test xevtc") == true)
+		{
+			ExecuteFromXevtc(myInputFilePath, 0, 0, true);
 		}
 		ImGui::Separator();
 
