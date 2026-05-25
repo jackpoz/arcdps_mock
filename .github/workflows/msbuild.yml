@@ -13,10 +13,22 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      
+      - name: Show env before
+        run: |
+          gci env:
+          
+      - name: Set v145
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=14.5
 
       # install cmake and ninja
       - uses: lukka/get-cmake@latest
 
+      - name: Show env after
+        run: |
+          gci env:
+        
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@main
         id: runvcpkg
@@ -37,7 +49,6 @@ jobs:
         uses: lukka/run-cmake@v10
         with:
           configurePreset: ${{ matrix.presets }}
-          configurePresetAdditionalArgs: "['-T v145']"
           buildPreset: ${{ matrix.presets }}
 
       - name: Archive files
