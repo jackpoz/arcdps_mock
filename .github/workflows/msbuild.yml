@@ -37,6 +37,7 @@ jobs:
         uses: lukka/run-cmake@v10
         with:
           configurePreset: ${{ matrix.presets }}
+          configurePresetAdditionalArgs: "['-T v145']"
           buildPreset: ${{ matrix.presets }}
 
       - name: Archive files
