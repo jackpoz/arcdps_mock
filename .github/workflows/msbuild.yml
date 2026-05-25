@@ -19,6 +19,7 @@ jobs:
           gci env:
           
       - name: Set v145
+        shell: cmd
         run: |
           call "C:\Program Files\Microsoft Visual Studio\18\Enterprise\VC\Auxiliary\Build\vcvars64.bat" -vcvars_ver=14.5
 
