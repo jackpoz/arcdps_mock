@@ -16,7 +16,7 @@ jobs:
       
       - name: Show env before
         run: |
-          gci env:
+          gci env: | fl
           
       - name: Set v145
         shell: cmd
@@ -28,7 +28,7 @@ jobs:
 
       - name: Show env after
         run: |
-          gci env:
+          gci env: | fl
         
       - name: Setup vcpkg
         uses: lukka/run-vcpkg@main
