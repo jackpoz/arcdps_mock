@@ -1,9 +1,8 @@
 {
-  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
   "name": "arcdps-mock",
-  "version-string": "0.1.0",
+  "version": "0.2.1",
   "dependencies": [
-    "imgui",
     {
       "name": "arcdps-extension",
       "default-features": false,
@@ -11,7 +10,7 @@
         "imgui"
       ]
     },
-    "magic-enum",
+    "imgui",
     "nlohmann-json"
   ],
   "features": {
@@ -24,8 +23,19 @@
             "dx11-binding",
             "win32-binding"
           ]
-        }
+        },
+        "magic-enum"
       ]
     }
-  }
+  },
+  "overrides": [
+    {
+      "name": "arcdps-extension",
+      "version": "2.2.0"
+    },
+    {
+      "name": "imgui",
+      "version": "1.92.7"
+    }
+  ]
 }
